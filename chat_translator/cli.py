@@ -2,12 +2,14 @@
 
 import argparse
 import json
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
+from chat_translator.ollama_translator import DEFAULT_MODEL, OllamaTranslator, TranslatorUnavailable
 from chat_translator.translator import Message, Translator
 
 HEADER = ["role", "original_content", "original_language", "translated_content"]
@@ -15,12 +17,21 @@ CONTEXT_SIZE = 3
 """How many earlier messages of the same conversation go along as context."""
 
 
-def main(argv: Sequence[str], translator: Translator) -> None:
+def main(argv: Sequence[str], translator: Translator | None = None) -> int:
+    """Run the command; returns the exit code. Tests pass their own translator."""
     parser = argparse.ArgumentParser(prog="chat_translator")
     parser.add_argument("export", type=Path)
     parser.add_argument("-o", "--output", type=Path, help="where to write the xlsx (default: next to the export)")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Ollama model to translate with (default: {DEFAULT_MODEL})")
     args = parser.parse_args(argv)
     output = args.output or args.export.with_suffix(".xlsx")
+
+    if translator is None:
+        try:
+            translator = OllamaTranslator(args.model)
+        except TranslatorUnavailable as error:
+            print(f"error: {error}", file=sys.stderr)
+            return 2
 
     export = json.loads(args.export.read_text(encoding="utf-8"))
     workbook = Workbook()
@@ -37,6 +48,7 @@ def main(argv: Sequence[str], translator: Translator) -> None:
             append_row(sheet, [message["role"], content, translation.original_language, translation.dutch])
             earlier.append(Message(message["role"], content))
     workbook.save(output)
+    return 0
 
 
 def append_row(sheet: Worksheet, values: list[str]) -> None:

@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+import pytest
 from openpyxl import load_workbook
 
 from chat_translator.cli import main
@@ -144,3 +145,16 @@ def test_a_message_is_translated_with_the_three_before_it_in_its_own_conversatio
         Message("user", "four"),
     ]
     assert translator.contexts["other conversation"] == []
+
+
+def test_without_a_running_model_it_stops_before_any_work(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    export = write_export(tmp_path / "export.json", [message("user", "Hello")])
+    monkeypatch.setenv("OLLAMA_HOST", "http://127.0.0.1:9")  # nothing listens here
+
+    exit_code = main([str(export)])
+
+    assert exit_code != 0
+    assert "Ollama" in capsys.readouterr().err
+    assert not (tmp_path / "export.xlsx").exists()
