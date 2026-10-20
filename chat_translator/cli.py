@@ -7,7 +7,6 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from openpyxl import Workbook
-from openpyxl.worksheet.worksheet import Worksheet
 
 from chat_translator.ollama_translator import DEFAULT_MODEL, OllamaTranslator, TranslatorUnavailable
 from chat_translator.translator import Message, Translator
@@ -15,6 +14,8 @@ from chat_translator.translator import Message, Translator
 HEADER = ["role", "original_content", "original_language", "translated_content"]
 CONTEXT_SIZE = 3
 """How many earlier messages of the same conversation go along as context."""
+
+Row = list[str]
 
 
 def main(argv: Sequence[str], translator: Translator | None = None) -> int:
@@ -24,7 +25,6 @@ def main(argv: Sequence[str], translator: Translator | None = None) -> int:
     parser.add_argument("-o", "--output", type=Path, help="where to write the xlsx (default: next to the export)")
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Ollama model to translate with (default: {DEFAULT_MODEL})")
     args = parser.parse_args(argv)
-    output = args.output or args.export.with_suffix(".xlsx")
 
     if translator is None:
         try:
@@ -33,27 +33,42 @@ def main(argv: Sequence[str], translator: Translator | None = None) -> int:
             print(f"error: {error}", file=sys.stderr)
             return 2
 
-    export = json.loads(args.export.read_text(encoding="utf-8"))
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.append(HEADER)
-    for conversation in export["conversations"]:
-        earlier: list[Message] = []
-        for message in conversation["messages"]:
-            content = message.get("content") or ""
-            if not content.strip():
-                append_row(sheet, [message["role"], content, "", ""])
-                continue
-            translation = translator.translate(content, context=earlier[-CONTEXT_SIZE:])
-            append_row(sheet, [message["role"], content, translation.original_language, translation.dutch])
-            earlier.append(Message(message["role"], content))
-    workbook.save(output)
+    conversations = read_export(args.export)
+    rows = translate(conversations, translator)
+    write_sheet(rows, args.output or args.export.with_suffix(".xlsx"))
     return 0
 
 
-def append_row(sheet: Worksheet, values: list[str]) -> None:
-    """Append a row of text. Every cell is a string, so a message like "=)" never becomes a formula."""
-    row = sheet.max_row + 1
-    for column, value in enumerate(values, start=1):
-        cell = sheet.cell(row=row, column=column, value=value)
-        cell.data_type = "s"
+def read_export(path: Path) -> list[list[Message]]:
+    """The export's conversations, each a list of its messages in order."""
+    export = json.loads(path.read_text(encoding="utf-8"))
+    return [
+        [Message(m["role"], m.get("content") or "", id=m.get("id", "")) for m in conversation["messages"]]
+        for conversation in export["conversations"]
+    ]
+
+
+def translate(conversations: list[list[Message]], translator: Translator) -> list[Row]:
+    """One row per message, in export order."""
+    rows: list[Row] = []
+    for conversation in conversations:
+        earlier: list[Message] = []
+        for message in conversation:
+            if not message.content.strip():
+                rows.append([message.role, message.content, "", ""])
+                continue
+            translation = translator.translate(message.content, context=earlier[-CONTEXT_SIZE:])
+            rows.append([message.role, message.content, translation.original_language, translation.dutch])
+            earlier.append(message)
+    return rows
+
+
+def write_sheet(rows: list[Row], path: Path) -> None:
+    """Every cell is written as text, so a message like "=)" never becomes a formula."""
+    workbook = Workbook()
+    sheet = workbook.active
+    for row_number, row in enumerate([HEADER, *rows], start=1):
+        for column, value in enumerate(row, start=1):
+            cell = sheet.cell(row=row_number, column=column, value=value)
+            cell.data_type = "s"
+    workbook.save(path)

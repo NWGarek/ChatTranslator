@@ -1,7 +1,7 @@
 """The Translator seam: the one boundary between a message and a translation engine."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 
@@ -10,6 +10,8 @@ class Message:
     role: str
     """Who wrote it: `user` (the flexwerker) or `assistant` (the bot)."""
     content: str
+    id: str = field(default="", compare=False)
+    """Chatbase's id: the only way to point at a message without showing its content."""
 
 
 @dataclass(frozen=True)

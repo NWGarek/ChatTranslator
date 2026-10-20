@@ -4,6 +4,7 @@ Every test drives the command end to end with a fake Translator and reads the
 written sheet back. Exports are built inline: no real export is ever used.
 """
 
+import itertools
 import json
 from collections.abc import Sequence
 from pathlib import Path
@@ -32,8 +33,11 @@ class FakeTranslator:
         return self.script.get(content, Translation(original_language="xx", dutch=f"NL[{content}]"))
 
 
+_ids = itertools.count(1)
+
+
 def message(role: str, content: Any) -> dict[str, Any]:
-    return {"id": f"id-{role}-{content}", "role": role, "content": content}
+    return {"id": f"msg-{next(_ids)}", "role": role, "content": content}
 
 
 def write_export(path: Path, *conversations: list[dict[str, Any]]) -> Path:
