@@ -6,6 +6,7 @@ import re
 from collections.abc import Sequence
 from urllib.parse import urlsplit
 
+import httpx
 from ollama import Client, ResponseError
 
 from chat_translator.translator import Message, Translation, TranslationFailed
@@ -80,7 +81,9 @@ class OllamaTranslator:
             answer = json.loads(response.message.content or "")
             language = str(answer["original_language"]).strip().lower()
             dutch = str(answer["dutch"])
-        except (ConnectionError, ResponseError, ValueError, KeyError, TypeError) as error:
+        # httpx.HTTPError: Ollama dropping out mid-reply surfaces as a raw transport
+        # error (read error, timeout), not as the ConnectionError a refused connection gives.
+        except (ConnectionError, httpx.HTTPError, ResponseError, ValueError, KeyError, TypeError) as error:
             # The message is not in the error: it must never reach the console.
             raise TranslationFailed(type(error).__name__) from error
         if not ISO_639_1.fullmatch(language):
