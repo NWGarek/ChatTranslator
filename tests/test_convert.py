@@ -64,6 +64,17 @@ def test_each_message_becomes_a_row_under_the_four_column_header(tmp_path: Path)
     ]
 
 
+def test_the_output_path_can_be_chosen(tmp_path: Path) -> None:
+    export = write_export(tmp_path / "export.json", [message("user", "Hello")])
+    chosen = tmp_path / "elsewhere" / "sheet.xlsx"
+    chosen.parent.mkdir()
+
+    main([str(export), "-o", str(chosen)], translator=FakeTranslator())
+
+    assert read_sheet(chosen)[1][:2] == ["user", "Hello"]
+    assert not (tmp_path / "export.xlsx").exists()
+
+
 def test_an_empty_message_keeps_its_row_but_is_never_translated(tmp_path: Path) -> None:
     export = write_export(
         tmp_path / "export.json",

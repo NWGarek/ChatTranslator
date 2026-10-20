@@ -15,7 +15,9 @@ HEADER = ["role", "original_content", "original_language", "translated_content"]
 def main(argv: Sequence[str], translator: Translator) -> None:
     parser = argparse.ArgumentParser(prog="chat_translator")
     parser.add_argument("export", type=Path)
+    parser.add_argument("-o", "--output", type=Path, help="where to write the xlsx (default: next to the export)")
     args = parser.parse_args(argv)
+    output = args.output or args.export.with_suffix(".xlsx")
 
     export = json.loads(args.export.read_text(encoding="utf-8"))
     workbook = Workbook()
@@ -29,4 +31,4 @@ def main(argv: Sequence[str], translator: Translator) -> None:
                 continue
             translated = translator.translate(content)
             sheet.append([message["role"], content, translated.language, translated.translation])
-    workbook.save(args.export.with_suffix(".xlsx"))
+    workbook.save(output)
