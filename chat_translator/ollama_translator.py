@@ -12,6 +12,7 @@ from ollama import Client, ResponseError
 from chat_translator.translator import Message, Translation, TranslationFailed
 
 DEFAULT_MODEL = "gemma3:4b"
+"""Chosen over qwen2.5:7b on translation quality and speed: see docs/model-comparison.md."""
 
 INSTRUCTIONS = """\
 You translate WhatsApp messages into Dutch for Dutch-speaking staff. The messages \
