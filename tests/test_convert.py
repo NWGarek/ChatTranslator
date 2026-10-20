@@ -175,3 +175,19 @@ def test_a_model_on_another_machine_is_refused_before_any_work(
     assert exit_code != 0
     assert "not on this machine" in capsys.readouterr().err
     assert not (tmp_path / "export.xlsx").exists()
+
+
+def test_a_dutch_message_is_its_own_translation_word_for_word(tmp_path: Path) -> None:
+    export = write_export(tmp_path / "export.json", [message("user", "hoe lang duurt dat ongeveer")])
+    translator = FakeTranslator(
+        {"hoe lang duurt dat ongeveer": Translation(original_language="nl", dutch="Hoe lang duurt dat ongeveer?")}
+    )
+
+    main([str(export)], translator=translator)
+
+    assert read_sheet(tmp_path / "export.xlsx")[1] == [
+        "user",
+        "hoe lang duurt dat ongeveer",
+        "nl",
+        "hoe lang duurt dat ongeveer",
+    ]

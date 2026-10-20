@@ -12,6 +12,7 @@ from chat_translator.ollama_translator import DEFAULT_MODEL, OllamaTranslator, T
 from chat_translator.translator import Message, Translator
 
 HEADER = ["role", "original_content", "original_language", "translated_content"]
+DUTCH = "nl"
 CONTEXT_SIZE = 3
 """How many earlier messages of the same conversation go along as context."""
 
@@ -58,7 +59,9 @@ def translate(conversations: list[list[Message]], translator: Translator) -> lis
                 rows.append([message.role, message.content, "", ""])
                 continue
             translation = translator.translate(message.content, context=earlier[-CONTEXT_SIZE:])
-            rows.append([message.role, message.content, translation.original_language, translation.dutch])
+            # Staff see Dutch exactly as it was written, never the model's "corrected" version.
+            dutch = message.content if translation.original_language == DUTCH else translation.dutch
+            rows.append([message.role, message.content, translation.original_language, dutch])
             earlier.append(message)
     return rows
 
