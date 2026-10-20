@@ -5,13 +5,14 @@ written sheet back. Exports are built inline: no real export is ever used.
 """
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from openpyxl import load_workbook
 
 from chat_translator.cli import main
-from chat_translator.translator import Translation
+from chat_translator.translator import Message, Translation
 
 HEADER = ["role", "original_content", "original_language", "translated_content"]
 
@@ -23,9 +24,9 @@ class FakeTranslator:
         self.script = script or {}
         self.asked: list[str] = []
 
-    def translate(self, content: str) -> Translation:
+    def translate(self, content: str, context: Sequence[Message]) -> Translation:
         self.asked.append(content)
-        return self.script.get(content, Translation(language="xx", translation=f"NL[{content}]"))
+        return self.script.get(content, Translation(original_language="xx", dutch=f"NL[{content}]"))
 
 
 def message(role: str, content: Any) -> dict[str, Any]:
@@ -50,8 +51,8 @@ def test_each_message_becomes_a_row_under_the_four_column_header(tmp_path: Path)
     )
     translator = FakeTranslator(
         {
-            "Cześć": Translation(language="pl", translation="Hoi"),
-            "Dzień dobry": Translation(language="pl", translation="Goedendag"),
+            "Cześć": Translation(original_language="pl", dutch="Hoi"),
+            "Dzień dobry": Translation(original_language="pl", dutch="Goedendag"),
         }
     )
 
@@ -66,7 +67,7 @@ def test_each_message_becomes_a_row_under_the_four_column_header(tmp_path: Path)
 
 def test_text_that_looks_like_a_formula_stays_text(tmp_path: Path) -> None:
     export = write_export(tmp_path / "export.json", [message("user", "=) dzięki")])
-    translator = FakeTranslator({"=) dzięki": Translation(language="pl", translation="=) bedankt")})
+    translator = FakeTranslator({"=) dzięki": Translation(original_language="pl", dutch="=) bedankt")})
 
     main([str(export)], translator=translator)
 
@@ -98,8 +99,8 @@ def test_an_empty_message_keeps_its_row_but_is_never_translated(tmp_path: Path) 
     )
     translator = FakeTranslator(
         {
-            "Hello": Translation(language="en", translation="Hallo"),
-            "Thanks": Translation(language="en", translation="Bedankt"),
+            "Hello": Translation(original_language="en", dutch="Hallo"),
+            "Thanks": Translation(original_language="en", dutch="Bedankt"),
         }
     )
 

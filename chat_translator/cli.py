@@ -30,8 +30,9 @@ def main(argv: Sequence[str], translator: Translator) -> None:
             if not content.strip():
                 append_row(sheet, [message["role"], content, "", ""])
                 continue
-            translated = translator.translate(content)
-            append_row(sheet, [message["role"], content, translated.language, translated.translation])
+            # The context window of preceding messages arrives with the local model (#3).
+            translation = translator.translate(content, context=())
+            append_row(sheet, [message["role"], content, translation.original_language, translation.dutch])
     workbook.save(output)
 
 
