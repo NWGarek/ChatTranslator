@@ -8,9 +8,11 @@ from pathlib import Path
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from chat_translator.translator import Translator
+from chat_translator.translator import Message, Translator
 
 HEADER = ["role", "original_content", "original_language", "translated_content"]
+CONTEXT_SIZE = 3
+"""How many earlier messages of the same conversation go along as context."""
 
 
 def main(argv: Sequence[str], translator: Translator) -> None:
@@ -25,14 +27,15 @@ def main(argv: Sequence[str], translator: Translator) -> None:
     sheet = workbook.active
     sheet.append(HEADER)
     for conversation in export["conversations"]:
+        earlier: list[Message] = []
         for message in conversation["messages"]:
             content = message.get("content") or ""
             if not content.strip():
                 append_row(sheet, [message["role"], content, "", ""])
                 continue
-            # The context window of preceding messages arrives with the local model (#3).
-            translation = translator.translate(content, context=())
+            translation = translator.translate(content, context=earlier[-CONTEXT_SIZE:])
             append_row(sheet, [message["role"], content, translation.original_language, translation.dutch])
+            earlier.append(Message(message["role"], content))
     workbook.save(output)
 
 

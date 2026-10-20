@@ -23,9 +23,11 @@ class FakeTranslator:
     def __init__(self, script: dict[str, Translation] | None = None) -> None:
         self.script = script or {}
         self.asked: list[str] = []
+        self.contexts: dict[str, list[Message]] = {}
 
     def translate(self, content: str, context: Sequence[Message]) -> Translation:
         self.asked.append(content)
+        self.contexts[content] = list(context)
         return self.script.get(content, Translation(original_language="xx", dutch=f"NL[{content}]"))
 
 
@@ -115,3 +117,30 @@ def test_an_empty_message_keeps_its_row_but_is_never_translated(tmp_path: Path) 
         ["assistant", "", "", ""],
         ["user", "Thanks", "en", "Bedankt"],
     ]
+
+
+def test_a_message_is_translated_with_the_three_before_it_in_its_own_conversation(tmp_path: Path) -> None:
+    export = write_export(
+        tmp_path / "export.json",
+        [
+            message("user", "one"),
+            message("assistant", "two"),
+            message("user", ""),
+            message("assistant", "three"),
+            message("user", "four"),
+            message("assistant", "five"),
+        ],
+        [message("user", "other conversation")],
+    )
+    translator = FakeTranslator()
+
+    main([str(export)], translator=translator)
+
+    assert translator.contexts["one"] == []
+    assert translator.contexts["two"] == [Message("user", "one")]
+    assert translator.contexts["five"] == [
+        Message("assistant", "two"),
+        Message("assistant", "three"),
+        Message("user", "four"),
+    ]
+    assert translator.contexts["other conversation"] == []
