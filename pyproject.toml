@@ -7,7 +7,7 @@ name = "chat-translator"
 version = "0.1.0"
 description = "Turns a Chatbase export into a spreadsheet staff can read in Dutch."
 requires-python = ">=3.11"
-dependencies = ["openpyxl>=3.1", "ollama>=0.4"]
+dependencies = ["openpyxl>=3.1", "ollama>=0.6.3"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "mypy>=1.10"]

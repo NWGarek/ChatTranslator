@@ -1,7 +1,9 @@
 """The Translator backed by a local model through Ollama: no message leaves the machine (ADR 0001)."""
 
 import json
+import os
 from collections.abc import Sequence
+from urllib.parse import urlsplit
 
 from ollama import Client, ResponseError
 
@@ -44,10 +46,13 @@ class TranslatorUnavailable(Exception):
     """The model can't be used, so no work should start."""
 
 
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+
+
 class OllamaTranslator:
     def __init__(self, model: str = DEFAULT_MODEL) -> None:
         self._model = model
-        self._client = Client()
+        self._client = Client(host=_local_host())
         try:
             self._client.show(model)
         except ConnectionError as error:
@@ -57,7 +62,7 @@ class OllamaTranslator:
                 raise TranslatorUnavailable(
                     f"The model {model} is not pulled into Ollama. Run: ollama pull {model}"
                 ) from error
-            raise
+            raise TranslatorUnavailable(f"Ollama cannot use the model {model}: {error.error}") from error
 
     def translate(self, content: str, context: Sequence[Message]) -> Translation:
         response = self._client.chat(
@@ -74,6 +79,18 @@ class OllamaTranslator:
             original_language=str(answer["original_language"]).strip().lower(),
             dutch=str(answer["dutch"]),
         )
+
+
+def _local_host() -> str:
+    """The Ollama address from OLLAMA_HOST, refused unless it is this machine (ADR 0001)."""
+    host = os.environ.get("OLLAMA_HOST") or "http://127.0.0.1:11434"
+    hostname = urlsplit(host if "://" in host else f"http://{host}").hostname
+    if hostname not in LOCAL_HOSTS:
+        raise TranslatorUnavailable(
+            f"OLLAMA_HOST points to {hostname}, which is not on this machine. "
+            "Messages may only be translated locally."
+        )
+    return host
 
 
 def _prompt(content: str, context: Sequence[Message]) -> str:

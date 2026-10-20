@@ -158,3 +158,16 @@ def test_without_a_running_model_it_stops_before_any_work(
     assert exit_code != 0
     assert "Ollama" in capsys.readouterr().err
     assert not (tmp_path / "export.xlsx").exists()
+
+
+def test_a_model_on_another_machine_is_refused_before_any_work(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    export = write_export(tmp_path / "export.json", [message("user", "Hello")])
+    monkeypatch.setenv("OLLAMA_HOST", "https://ollama.example.com")
+
+    exit_code = main([str(export)])
+
+    assert exit_code != 0
+    assert "not on this machine" in capsys.readouterr().err
+    assert not (tmp_path / "export.xlsx").exists()
