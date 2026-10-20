@@ -62,3 +62,29 @@ def test_each_message_becomes_a_row_under_the_four_column_header(tmp_path: Path)
         ["user", "Cześć", "pl", "Hoi"],
         ["assistant", "Dzień dobry", "pl", "Goedendag"],
     ]
+
+
+def test_an_empty_message_keeps_its_row_but_is_never_translated(tmp_path: Path) -> None:
+    export = write_export(
+        tmp_path / "export.json",
+        [message("user", "Hello"), message("assistant", "")],
+        [message("user", "   \n"), message("assistant", None), message("user", "Thanks")],
+    )
+    translator = FakeTranslator(
+        {
+            "Hello": Translation(language="en", translation="Hallo"),
+            "Thanks": Translation(language="en", translation="Bedankt"),
+        }
+    )
+
+    main([str(export)], translator=translator)
+
+    assert translator.asked == ["Hello", "Thanks"]
+    assert read_sheet(tmp_path / "export.xlsx") == [
+        HEADER,
+        ["user", "Hello", "en", "Hallo"],
+        ["assistant", "", "", ""],
+        ["user", "   \n", "", ""],
+        ["assistant", "", "", ""],
+        ["user", "Thanks", "en", "Bedankt"],
+    ]

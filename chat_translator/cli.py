@@ -23,6 +23,10 @@ def main(argv: Sequence[str], translator: Translator) -> None:
     sheet.append(HEADER)
     for conversation in export["conversations"]:
         for message in conversation["messages"]:
-            translated = translator.translate(message["content"])
-            sheet.append([message["role"], message["content"], translated.language, translated.translation])
+            content = message.get("content") or ""
+            if not content.strip():
+                sheet.append([message["role"], content, "", ""])
+                continue
+            translated = translator.translate(content)
+            sheet.append([message["role"], content, translated.language, translated.translation])
     workbook.save(args.export.with_suffix(".xlsx"))
