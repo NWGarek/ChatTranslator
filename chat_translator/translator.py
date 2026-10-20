@@ -22,9 +22,13 @@ class Translation:
     """The message rendered in Dutch."""
 
 
+class TranslationFailed(Exception):
+    """This one message could not be translated; the next one may well succeed."""
+
+
 class Translator(Protocol):
     def translate(self, content: str, context: Sequence[Message]) -> Translation:
-        """Translate one message's content.
+        """Translate one message's content, or raise TranslationFailed.
 
         `context` is the messages just before it in the same conversation. It
         helps make sense of short replies, but is never itself translated and

@@ -14,23 +14,34 @@ import pytest
 from openpyxl import load_workbook
 
 from chat_translator.cli import main
-from chat_translator.translator import Message, Translation
+from chat_translator.translator import Message, Translation, TranslationFailed
 
 HEADER = ["role", "original_content", "original_language", "translated_content"]
 
 
-class FakeTranslator:
-    """Answers from a script and remembers what it was asked."""
+Answer = Translation | TranslationFailed
 
-    def __init__(self, script: dict[str, Translation] | None = None) -> None:
+
+class FakeTranslator:
+    """Answers from a script and remembers what it was asked.
+
+    A message's script is one answer, or a list of answers given one per attempt.
+    """
+
+    def __init__(self, script: dict[str, Answer | list[Answer]] | None = None) -> None:
         self.script = script or {}
         self.asked: list[str] = []
         self.contexts: dict[str, list[Message]] = {}
 
     def translate(self, content: str, context: Sequence[Message]) -> Translation:
+        attempt = self.asked.count(content)
         self.asked.append(content)
         self.contexts[content] = list(context)
-        return self.script.get(content, Translation(original_language="xx", dutch=f"NL[{content}]"))
+        answers = self.script.get(content, Translation(original_language="xx", dutch=f"NL[{content}]"))
+        answer = answers[min(attempt, len(answers) - 1)] if isinstance(answers, list) else answers
+        if isinstance(answer, TranslationFailed):
+            raise answer
+        return answer
 
 
 _ids = itertools.count(1)
@@ -191,3 +202,33 @@ def test_a_dutch_message_is_its_own_translation_word_for_word(tmp_path: Path) ->
         "nl",
         "hoe lang duurt dat ongeveer",
     ]
+
+
+def test_a_failed_translation_is_retried_once_then_left_blank_and_the_run_carries_on(tmp_path: Path) -> None:
+    export = write_export(
+        tmp_path / "export.json",
+        [message("user", "flaky"), message("user", "broken"), message("user", "fine")],
+    )
+    translator = FakeTranslator(
+        {
+            "flaky": [TranslationFailed("no JSON"), Translation(original_language="en", dutch="wankel")],
+            "broken": TranslationFailed("no JSON"),
+            "fine": Translation(original_language="en", dutch="goed"),
+        }
+    )
+
+    exit_code = main([str(export)], translator=translator)
+
+    assert translator.asked == ["flaky", "flaky", "broken", "broken", "fine"]
+    assert read_sheet(tmp_path / "export.xlsx")[1:] == [
+        ["user", "flaky", "en", "wankel"],
+        ["user", "broken", "", ""],
+        ["user", "fine", "en", "goed"],
+    ]
+    assert exit_code != 0
+
+
+def test_a_run_without_failures_exits_cleanly(tmp_path: Path) -> None:
+    export = write_export(tmp_path / "export.json", [message("user", "Hello"), message("user", "")])
+
+    assert main([str(export)], translator=FakeTranslator()) == 0

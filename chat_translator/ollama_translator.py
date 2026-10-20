@@ -2,12 +2,13 @@
 
 import json
 import os
+import re
 from collections.abc import Sequence
 from urllib.parse import urlsplit
 
 from ollama import Client, ResponseError
 
-from chat_translator.translator import Message, Translation
+from chat_translator.translator import Message, Translation, TranslationFailed
 
 DEFAULT_MODEL = "gemma3:4b"
 
@@ -46,6 +47,7 @@ class TranslatorUnavailable(Exception):
     """The model can't be used, so no work should start."""
 
 
+ISO_639_1 = re.compile(r"[a-z]{2}")
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
 
 
@@ -65,20 +67,25 @@ class OllamaTranslator:
             raise TranslatorUnavailable(f"Ollama cannot use the model {model}: {error.error}") from error
 
     def translate(self, content: str, context: Sequence[Message]) -> Translation:
-        response = self._client.chat(
-            model=self._model,
-            messages=[
-                {"role": "system", "content": INSTRUCTIONS},
-                {"role": "user", "content": _prompt(content, context)},
-            ],
-            format=SCHEMA,
-            options={"temperature": 0},
-        )
-        answer = json.loads(response.message.content or "")
-        return Translation(
-            original_language=str(answer["original_language"]).strip().lower(),
-            dutch=str(answer["dutch"]),
-        )
+        try:
+            response = self._client.chat(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": INSTRUCTIONS},
+                    {"role": "user", "content": _prompt(content, context)},
+                ],
+                format=SCHEMA,
+                options={"temperature": 0},
+            )
+            answer = json.loads(response.message.content or "")
+            language = str(answer["original_language"]).strip().lower()
+            dutch = str(answer["dutch"])
+        except (ConnectionError, ResponseError, ValueError, KeyError, TypeError) as error:
+            # The message is not in the error: it must never reach the console.
+            raise TranslationFailed(type(error).__name__) from error
+        if not ISO_639_1.fullmatch(language):
+            raise TranslationFailed("original_language is not an ISO 639-1 code")
+        return Translation(original_language=language, dutch=dutch)
 
 
 def _local_host() -> str:

@@ -9,10 +9,12 @@ from pathlib import Path
 from openpyxl import Workbook
 
 from chat_translator.ollama_translator import DEFAULT_MODEL, OllamaTranslator, TranslatorUnavailable
-from chat_translator.translator import Message, Translator
+from chat_translator.translator import Message, Translation, TranslationFailed, Translator
 
 HEADER = ["role", "original_content", "original_language", "translated_content"]
 DUTCH = "nl"
+ATTEMPTS = 2
+"""A failed translation is retried once."""
 CONTEXT_SIZE = 3
 """How many earlier messages of the same conversation go along as context."""
 
@@ -35,9 +37,9 @@ def main(argv: Sequence[str], translator: Translator | None = None) -> int:
             return 2
 
     conversations = read_export(args.export)
-    rows = translate(conversations, translator)
+    rows, failed = translate(conversations, translator)
     write_sheet(rows, args.output or args.export.with_suffix(".xlsx"))
-    return 0
+    return 1 if failed else 0
 
 
 def read_export(path: Path) -> list[list[Message]]:
@@ -49,21 +51,36 @@ def read_export(path: Path) -> list[list[Message]]:
     ]
 
 
-def translate(conversations: list[list[Message]], translator: Translator) -> list[Row]:
-    """One row per message, in export order."""
+def translate(conversations: list[list[Message]], translator: Translator) -> tuple[list[Row], list[Message]]:
+    """One row per message, in export order, and the messages that could not be translated."""
     rows: list[Row] = []
+    failed: list[Message] = []
     for conversation in conversations:
         earlier: list[Message] = []
         for message in conversation:
             if not message.content.strip():
                 rows.append([message.role, message.content, "", ""])
                 continue
-            translation = translator.translate(message.content, context=earlier[-CONTEXT_SIZE:])
-            # Staff see Dutch exactly as it was written, never the model's "corrected" version.
-            dutch = message.content if translation.original_language == DUTCH else translation.dutch
-            rows.append([message.role, message.content, translation.original_language, dutch])
+            translation = translate_with_retry(translator, message, context=earlier[-CONTEXT_SIZE:])
+            if translation is None:
+                failed.append(message)
+                rows.append([message.role, message.content, "", ""])
+            else:
+                # Staff see Dutch exactly as it was written, never the model's "corrected" version.
+                dutch = message.content if translation.original_language == DUTCH else translation.dutch
+                rows.append([message.role, message.content, translation.original_language, dutch])
             earlier.append(message)
-    return rows
+    return rows, failed
+
+
+def translate_with_retry(translator: Translator, message: Message, context: Sequence[Message]) -> Translation | None:
+    """The translation, retried once on failure; None if both attempts failed."""
+    for _ in range(ATTEMPTS):
+        try:
+            return translator.translate(message.content, context=context)
+        except TranslationFailed:
+            pass
+    return None
 
 
 def write_sheet(rows: list[Row], path: Path) -> None:
