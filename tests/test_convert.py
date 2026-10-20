@@ -232,3 +232,32 @@ def test_a_run_without_failures_exits_cleanly(tmp_path: Path) -> None:
     export = write_export(tmp_path / "export.json", [message("user", "Hello"), message("user", "")])
 
     assert main([str(export)], translator=FakeTranslator()) == 0
+
+
+def test_a_translation_that_breaks_a_link_counts_as_failed(tmp_path: Path) -> None:
+    dropped = "Formularz: https://www.nwg.nl/flexwerker-formulieren"
+    altered = "Formulario: https://www.nwg.nl/formulieren?lang=es"
+    fixed_on_retry = "Form: https://www.nwg.nl/a"
+    export = write_export(
+        tmp_path / "export.json",
+        [message("assistant", dropped), message("assistant", altered), message("assistant", fixed_on_retry)],
+    )
+    translator = FakeTranslator(
+        {
+            dropped: Translation(original_language="pl", dutch="Formulier: zie de website"),
+            altered: Translation(original_language="es", dutch="Formulier: https://www.nwg.nl/formulieren?lang=nl"),
+            fixed_on_retry: [
+                Translation(original_language="en", dutch="Formulier: https://www.nwg.nl/"),
+                Translation(original_language="en", dutch="Formulier: https://www.nwg.nl/a"),
+            ],
+        }
+    )
+
+    exit_code = main([str(export)], translator=translator)
+
+    assert read_sheet(tmp_path / "export.xlsx")[1:] == [
+        ["assistant", dropped, "pl", ""],
+        ["assistant", altered, "es", ""],
+        ["assistant", fixed_on_retry, "en", "Formulier: https://www.nwg.nl/a"],
+    ]
+    assert exit_code != 0

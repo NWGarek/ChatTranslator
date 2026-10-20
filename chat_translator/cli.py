@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import re
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -9,12 +10,13 @@ from pathlib import Path
 from openpyxl import Workbook
 
 from chat_translator.ollama_translator import DEFAULT_MODEL, OllamaTranslator, TranslatorUnavailable
-from chat_translator.translator import Message, Translation, TranslationFailed, Translator
+from chat_translator.translator import Message, TranslationFailed, Translator
 
 HEADER = ["role", "original_content", "original_language", "translated_content"]
 DUTCH = "nl"
 ATTEMPTS = 2
 """A failed translation is retried once."""
+URL = re.compile(r"https?://\S+")
 CONTEXT_SIZE = 3
 """How many earlier messages of the same conversation go along as context."""
 
@@ -61,26 +63,38 @@ def translate(conversations: list[list[Message]], translator: Translator) -> tup
             if not message.content.strip():
                 rows.append([message.role, message.content, "", ""])
                 continue
-            translation = translate_with_retry(translator, message, context=earlier[-CONTEXT_SIZE:])
-            if translation is None:
+            language, dutch = translate_message(translator, message, context=earlier[-CONTEXT_SIZE:])
+            if dutch is None:
                 failed.append(message)
-                rows.append([message.role, message.content, "", ""])
-            else:
-                # Staff see Dutch exactly as it was written, never the model's "corrected" version.
-                dutch = message.content if translation.original_language == DUTCH else translation.dutch
-                rows.append([message.role, message.content, translation.original_language, dutch])
+            rows.append([message.role, message.content, language, dutch or ""])
             earlier.append(message)
     return rows, failed
 
 
-def translate_with_retry(translator: Translator, message: Message, context: Sequence[Message]) -> Translation | None:
-    """The translation, retried once on failure; None if both attempts failed."""
+def translate_message(translator: Translator, message: Message, context: Sequence[Message]) -> tuple[str, str | None]:
+    """The original language and the Dutch, retrying a failed attempt once.
+
+    The Dutch is None when both attempts failed; the language is then whatever
+    the last answer said, or blank if no answer came back.
+    """
+    language = ""
     for _ in range(ATTEMPTS):
         try:
-            return translator.translate(message.content, context=context)
+            translation = translator.translate(message.content, context=context)
         except TranslationFailed:
-            pass
-    return None
+            continue
+        language = translation.original_language
+        if language == DUTCH:
+            # Staff see Dutch exactly as it was written, never the model's "corrected" version.
+            return language, message.content
+        if links(translation.dutch) == links(message.content):
+            return language, translation.dutch
+    return language, None
+
+
+def links(text: str) -> list[str]:
+    """Every URL in the text, in order: a translation must keep them all, unchanged."""
+    return [url.rstrip(".,;:!?)*'\"") for url in URL.findall(text)]
 
 
 def write_sheet(rows: list[Row], path: Path) -> None:
