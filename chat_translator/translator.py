@@ -13,6 +13,11 @@ class Message:
     id: str = field(default="", compare=False)
     """Chatbase's id: the only way to point at a message without showing its content."""
 
+    @property
+    def is_empty(self) -> bool:
+        """Blank or whitespace only: it keeps its row but there is nothing to translate."""
+        return not self.content.strip()
+
 
 @dataclass(frozen=True)
 class Translation:
