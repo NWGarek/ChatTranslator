@@ -1,0 +1,276 @@
+{
+ "chatbotId": "SAMPLE0000000000000",
+ "chatbotName": "Chatbot - SAMPLE (made-up data)",
+ "startDateStr": "2026-01-12",
+ "endDateStr": "2026-01-12",
+ "conversations": [
+  {
+   "chatbot_id": "SAMPLE0000000000000",
+   "account_id": "0f4205b4-907a-70c3-1012-f037b64ce422",
+   "country": "Poland",
+   "created_at": "2026-01-12 09:00:00",
+   "form_submission": null,
+   "id": "8c38fb29-18f1-35d2-5f55-7203301850c5",
+   "messages": [
+    {
+     "id": "a6a3a450-6513-270e-269e-0d37f2a74de4",
+     "createdAt": "2026-01-12 09:02:55",
+     "role": "user",
+     "content": "Cześć, czy mogę dostać zaliczkę w tym tygodniu? Brakuje mi na czynsz",
+     "metaMessageId": "wamid.SAMPLE892F902BD23F0824128B2F330C5C7FD0"
+    },
+    {
+     "id": "e8e25d94-0ed9-0475-9531-985d5d9dc9f8",
+     "stepId": "1600a35a-0999-50d8-36f6-75cc81e74ef5",
+     "createdAt": "2026-01-12 09:03:53",
+     "role": "assistant",
+     "type": "text",
+     "score": 0.516823,
+     "content": "Zaliczkę możesz zgłosić przez formularz: https://www.nwg.nl/flexwerker-formulieren\n\nWybierz kolejno: *język: polski → temat: Wypłata → podopcja: Zaliczka*.",
+     "source": "llm",
+     "matchedSources": []
+    },
+    {
+     "id": "6cad4a26-8d11-6ece-1738-f7d93d9c1724",
+     "createdAt": "2026-01-12 09:04:38",
+     "role": "user",
+     "content": "A ile czasu to trwa?",
+     "metaMessageId": "wamid.SAMPLE1FB17C2390C192CFD3AC94AF0F21DDB6"
+    },
+    {
+     "id": "f29d0da9-953f-48f1-a09f-76b5a170b338",
+     "stepId": "658cda14-95e6-0af5-93bd-04cf0fd630f1",
+     "createdAt": "2026-01-12 09:06:42",
+     "role": "assistant",
+     "type": "text",
+     "score": 0.324795,
+     "content": "Zwykle odpowiadamy w ciągu 2 dni roboczych. Sprawdź, czy poprawnie wpisałeś swój adres e-mail.",
+     "source": "llm",
+     "matchedSources": []
+    },
+    {
+     "id": "2217bead-dbc4-96cb-8e81-973e0becd7b0",
+     "createdAt": "2026-01-12 09:08:45",
+     "role": "user",
+     "content": "ok dzięki 👍",
+     "metaMessageId": "wamid.SAMPLE8A6A63EC24EDE6A46B4CB2424A23D596"
+    },
+    {
+     "id": "d0eda82f-8f6d-0558-4ef8-aa3892276658",
+     "stepId": "94e3bf91-1a61-dbe2-2e44-158bae97ba94",
+     "createdAt": "2026-01-12 09:09:55",
+     "role": "assistant",
+     "type": "text",
+     "score": 0.585602,
+     "content": "Nie ma za co! Powodzenia.",
+     "source": "llm",
+     "matchedSources": []
+    }
+   ],
+   "min_score": 0.324795,
+   "source": "WhatsApp",
+   "anonymous_id": null,
+   "user_id": "ae2eb154-7f15-0524-34b9-b5df9e7769b1",
+   "last_message_at": "2026-01-12 09:09:55",
+   "sentiment": null,
+   "external_conversation_id": null,
+   "title": "Pytanie o zaliczkę",
+   "version": 1,
+   "topics": [],
+   "live_chat": [],
+   "parentConversationId": null,
+   "parentSummary": null
+  },
+  {
+   "chatbot_id": "SAMPLE0000000000000",
+   "account_id": "119a72d1-74c9-df6a-cc01-1cdd9474031b",
+   "country": "Ukraine",
+   "created_at": "2026-01-12 11:00:00",
+   "form_submission": null,
+   "id": "7f26144b-9828-9fcd-59a5-4a7bb1fee08f",
+   "messages": [
+    {
+     "id": "7731af10-506b-f2ef-c6f8-77186d76b07e",
+     "createdAt": "2026-01-12 11:04:42",
+     "role": "user",
+     "content": "Добрий день. Я захворів, що мені робити? Сьогодні не можу прийти на роботу",
+     "metaMessageId": "wamid.SAMPLE5C90A9587403E430EC66A78795E761D1"
+    },
+    {
+     "id": "b2f14c94-2e05-319a-cb5c-74273f98e277",
+     "stepId": "930d6eaf-14f4-733f-3e7d-1bfbc7a2ea20",
+     "createdAt": "2026-01-12 11:07:25",
+     "role": "assistant",
+     "type": "text",
+     "score": 0.450125,
+     "content": "Повідомте про хворобу якомога раніше, до початку зміни, через форму: https://www.nwg.nl/flexwerker-formulieren\n\nОберіть: *мова: українська → тема: Хвороба*.",
+     "source": "llm",
+     "matchedSources": []
+    },
+    {
+     "id": "72e6cc3a-babc-ed20-57ee-05cde00902c7",
+     "createdAt": "2026-01-12 11:11:48",
+     "role": "user",
+     "content": "А якщо в мене немає інтернету на телефоні?",
+     "metaMessageId": "wamid.SAMPLE12BD4ACEFAECBD389BE4BCFC49B64A08"
+    },
+    {
+     "id": "c1d3fcff-2a3a-f4d4-6b0a-18e8830e07bc",
+     "stepId": "7d2caf82-eeea-cbe2-26e8-75555790f82e",
+     "createdAt": "2026-01-12 11:12:58",
+     "role": "assistant",
+     "type": "text",
+     "score": 0.510849,
+     "content": "Тоді попросіть колегу або координатора на житлі допомогти заповнити форму.",
+     "source": "llm",
+     "matchedSources": []
+    },
+    {
+     "id": "ca02135e-92b1-d3f2-8ede-0d7ac3baea9e",
+     "createdAt": "2026-01-12 11:13:47",
+     "role": "user",
+     "content": "Дякую",
+     "metaMessageId": "wamid.SAMPLE571242425051C1CCD17F9ACAE01F5057"
+    }
+   ],
+   "min_score": 0.450125,
+   "source": "WhatsApp",
+   "anonymous_id": null,
+   "user_id": "451abd81-f1d6-9ed6-17f5-e837d70820fe",
+   "last_message_at": "2026-01-12 11:13:47",
+   "sentiment": null,
+   "external_conversation_id": null,
+   "title": "Лікарняний",
+   "version": 1,
+   "topics": [],
+   "live_chat": [],
+   "parentConversationId": null,
+   "parentSummary": null
+  },
+  {
+   "chatbot_id": "SAMPLE0000000000000",
+   "account_id": "47469a4d-8cdb-305f-dd2e-16096e36aab0",
+   "country": "Netherlands",
+   "created_at": "2026-01-12 13:00:00",
+   "form_submission": null,
+   "id": "d1bc52d9-230d-977e-e225-71594720771f",
+   "messages": [
+    {
+     "id": "0f88080b-10a3-d6b2-aa05-e11ab2715945",
+     "createdAt": "2026-01-12 13:04:12",
+     "role": "user",
+     "content": "Hoi, mijn kamergenoot maakt elke nacht lawaai. Kan ik naar een andere kamer?",
+     "metaMessageId": "wamid.SAMPLEA5AA3C814F426DCBB394FB36BB2D420F"
+    },
+    {
+     "id": "e3151288-62c3-3a4f-b774-eb5248db40af",
+     "stepId": "f0ce5835-05c6-af07-58d5-563dab2cd31e",
+     "createdAt": "2026-01-12 13:08:10",
+     "role": "assistant",
+     "type": "text",
+     "score": 0.530848,
+     "content": "Dat kun je aanvragen via het formulier: https://www.nwg.nl/flexwerker-formulieren\n\nKies: *taal: Nederlands → onderwerp: Huisvesting → suboptie: Verhuizen*.",
+     "source": "llm",
+     "matchedSources": []
+    },
+    {
+     "id": "0f17a300-7e62-aa0a-1df9-fd789c653938",
+     "createdAt": "2026-01-12 13:09:46",
+     "role": "user",
+     "content": "Hoe lang duurt dat ongeveer",
+     "metaMessageId": "wamid.SAMPLE211C70CF49952399C4AAEAC137DC76FB"
+    },
+    {
+     "id": "df1582b0-eab4-77d2-6415-479c65dc9f50",
+     "stepId": "72fdf202-2a96-fb1a-14a0-f9e77f1b103c",
+     "createdAt": "2026-01-12 13:12:02",
+     "role": "assistant",
+     "type": "text",
+     "score": 0.500822,
+     "content": "Dat hangt af van de beschikbaarheid. De huisvestingsafdeling neemt contact met je op.",
+     "source": "llm",
+     "matchedSources": []
+    }
+   ],
+   "min_score": 0.500822,
+   "source": "WhatsApp",
+   "anonymous_id": null,
+   "user_id": "5bd86d40-fc89-1b4a-6a50-df4db4d66a3a",
+   "last_message_at": "2026-01-12 13:12:02",
+   "sentiment": null,
+   "external_conversation_id": null,
+   "title": "Huisvesting",
+   "version": 1,
+   "topics": [],
+   "live_chat": [],
+   "parentConversationId": null,
+   "parentSummary": null
+  },
+  {
+   "chatbot_id": "SAMPLE0000000000000",
+   "account_id": "1c2442f9-298c-b3a5-70cc-ec313571810a",
+   "country": "Romania",
+   "created_at": "2026-01-12 15:00:00",
+   "form_submission": null,
+   "id": "fc132d0d-113d-b17d-30cb-c97d0fef7928",
+   "messages": [
+    {
+     "id": "153e7c2a-26a2-c0bd-3b12-87fff52ddf5d",
+     "createdAt": "2026-01-12 15:03:24",
+     "role": "user",
+     "content": "hello i dont understand my payslip, why is there less hours then i work??",
+     "metaMessageId": "wamid.SAMPLEA8948C893B61867626BB7DBD2D1C9AF0"
+    },
+    {
+     "id": "96d0cc5f-d4c2-8c2e-7c26-847f0316909e",
+     "stepId": "010c4759-482c-9cbc-4343-5cc52eae05cf",
+     "createdAt": "2026-01-12 15:05:33",
+     "role": "assistant",
+     "type": "text",
+     "score": 0.372838,
+     "content": "Please report this through the form: https://www.nwg.nl/flexwerker-formulieren\n\nChoose: *language: English → topic: Salary → sub-option: Hours missing*. Mention the dates and the client where you worked.",
+     "source": "llm",
+     "matchedSources": []
+    },
+    {
+     "id": "519088f5-90fb-bd11-9c1c-aaf75e8766ed",
+     "createdAt": "2026-01-12 15:10:16",
+     "role": "user",
+     "content": "Buna ziua, pot sa scriu in romana?",
+     "metaMessageId": "wamid.SAMPLEDBF4A8B2B0C4312D20203626F3FE39C0"
+    },
+    {
+     "id": "ad1b72db-a7ab-e1c2-9e1a-8ef4f341e07a",
+     "stepId": "e647cb8f-74e6-9a5d-0dd2-7a65bd628881",
+     "createdAt": "2026-01-12 15:14:49",
+     "role": "assistant",
+     "type": "text",
+     "score": 0.73549,
+     "content": "Da, puteți scrie în română. Formularul este disponibil și în limba română.",
+     "source": "llm",
+     "matchedSources": []
+    },
+    {
+     "id": "64e50cad-6623-7a04-65e7-e4236472f1a3",
+     "createdAt": "2026-01-12 15:19:45",
+     "role": "user",
+     "content": "multumesc",
+     "metaMessageId": "wamid.SAMPLE66836886A260CD0B7B45145C1A81682C"
+    }
+   ],
+   "min_score": 0.372838,
+   "source": "WhatsApp",
+   "anonymous_id": null,
+   "user_id": "1a358ca0-0d75-985d-99c9-4309570dc195",
+   "last_message_at": "2026-01-12 15:19:45",
+   "sentiment": null,
+   "external_conversation_id": null,
+   "title": "Payslip question",
+   "version": 1,
+   "topics": [],
+   "live_chat": [],
+   "parentConversationId": null,
+   "parentSummary": null
+  }
+ ]
+}

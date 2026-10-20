@@ -16,3 +16,5 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
+# The made-up sample (no personal data) is the one export allowed in the repo.
+!tests/fixtures/made-up-sample.json

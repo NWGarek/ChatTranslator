@@ -17,6 +17,8 @@ packages = ["chat_translator"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["ollama: runs the real local model (slow); run with -m ollama"]
+addopts = "-m 'not ollama'"
 
 [tool.mypy]
 strict = true

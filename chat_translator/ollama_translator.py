@@ -13,10 +13,11 @@ INSTRUCTIONS = """\
 You translate WhatsApp messages into Dutch for Dutch-speaking staff. The messages \
 are between flexwerkers (temporary workers) and the company chatbot.
 
-Return JSON with two fields:
-- original_language: the ISO 639-1 code of the language the message is written in, \
-for example "pl", "uk", "ro", "en" or "nl". Judge it from the message alone, never \
-from the earlier messages. If the message mixes languages, give the dominant one.
+Return JSON with three fields:
+- language_name: the English name of the language the message is written in, for \
+example "Polish". Judge it from the message alone, never from the earlier messages. \
+If the message mixes languages, give the dominant one.
+- original_language: the ISO 639-1 code of that same language, for example "pl".
 - dutch: the whole message translated into natural Dutch. If it is already Dutch, \
 return it unchanged.
 
@@ -25,13 +26,17 @@ In paths like "a → b → c", keep the arrows and translate the words.
 The earlier messages are context only: do not translate them, do not answer the \
 message, and do not add explanations."""
 
+# The model names the language before giving its code: asked for the code
+# alone, gemma3:4b labelled Polish messages "nl", confusing the language of the
+# message with the language it was translating into.
 SCHEMA = {
     "type": "object",
     "properties": {
+        "language_name": {"type": "string"},
         "original_language": {"type": "string"},
         "dutch": {"type": "string"},
     },
-    "required": ["original_language", "dutch"],
+    "required": ["language_name", "original_language", "dutch"],
 }
 
 
