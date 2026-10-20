@@ -261,3 +261,31 @@ def test_a_translation_that_breaks_a_link_counts_as_failed(tmp_path: Path) -> No
         ["assistant", fixed_on_retry, "en", "Formulier: https://www.nwg.nl/a"],
     ]
     assert exit_code != 0
+
+
+def test_the_run_reports_counts_and_failed_ids_but_never_message_text(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    broken = message("user", "Mam problem z wypłatą")
+    export = write_export(
+        tmp_path / "export.json",
+        [message("user", "Mój numer to 0612345678"), message("assistant", "")],
+        [message("user", "ik ben ziek vandaag"), broken],
+    )
+    translator = FakeTranslator(
+        {
+            "Mój numer to 0612345678": Translation(original_language="pl", dutch="Mijn nummer is 0612345678"),
+            "ik ben ziek vandaag": Translation(original_language="nl", dutch="Ik ben ziek vandaag."),
+            "Mam problem z wypłatą": TranslationFailed("no JSON"),
+        }
+    )
+
+    main([str(export)], translator=translator)
+
+    out, err = capsys.readouterr()
+    console = out + err
+    assert "3/3" in err  # progress over the messages that need translating
+    assert "4 messages: 1 translated, 1 Dutch kept as written, 1 empty, 1 failed" in out
+    assert f"failed: {broken['id']}" in out
+    for text in ["0612345678", "Mój numer", "Mijn nummer", "ziek", "wypłatą"]:
+        assert text not in console

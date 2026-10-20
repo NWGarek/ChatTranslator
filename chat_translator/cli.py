@@ -5,6 +5,7 @@ import json
 import re
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -39,9 +40,10 @@ def main(argv: Sequence[str], translator: Translator | None = None) -> int:
             return 2
 
     conversations = read_export(args.export)
-    rows, failed = translate(conversations, translator)
+    rows, tally = translate(conversations, translator)
     write_sheet(rows, args.output or args.export.with_suffix(".xlsx"))
-    return 1 if failed else 0
+    report(tally)
+    return 1 if tally.failed else 0
 
 
 def read_export(path: Path) -> list[list[Message]]:
@@ -53,22 +55,56 @@ def read_export(path: Path) -> list[list[Message]]:
     ]
 
 
-def translate(conversations: list[list[Message]], translator: Translator) -> tuple[list[Row], list[Message]]:
-    """One row per message, in export order, and the messages that could not be translated."""
+@dataclass
+class Tally:
+    """What happened to the messages of one run. Holds ids, never content."""
+
+    translated: int = 0
+    dutch: int = 0
+    empty: int = 0
+    failed: list[str] = field(default_factory=list)
+
+    @property
+    def total(self) -> int:
+        return self.translated + self.dutch + self.empty + len(self.failed)
+
+
+def translate(conversations: list[list[Message]], translator: Translator) -> tuple[list[Row], Tally]:
+    """One row per message, in export order, and a tally of how each one went."""
     rows: list[Row] = []
-    failed: list[Message] = []
+    tally = Tally()
+    to_translate = sum(1 for conversation in conversations for message in conversation if message.content.strip())
+    done = 0
     for conversation in conversations:
         earlier: list[Message] = []
         for message in conversation:
             if not message.content.strip():
+                tally.empty += 1
                 rows.append([message.role, message.content, "", ""])
                 continue
             language, dutch = translate_message(translator, message, context=earlier[-CONTEXT_SIZE:])
             if dutch is None:
-                failed.append(message)
+                tally.failed.append(message.id)
+            elif language == DUTCH:
+                tally.dutch += 1
+            else:
+                tally.translated += 1
             rows.append([message.role, message.content, language, dutch or ""])
             earlier.append(message)
-    return rows, failed
+            done += 1
+            print(f"\rtranslating {done}/{to_translate}", end="", file=sys.stderr, flush=True)
+    if to_translate:
+        print(file=sys.stderr)
+    return rows, tally
+
+
+def report(tally: Tally) -> None:
+    print(
+        f"{tally.total} messages: {tally.translated} translated, {tally.dutch} Dutch kept as written, "
+        f"{tally.empty} empty, {len(tally.failed)} failed"
+    )
+    for message_id in tally.failed:
+        print(f"failed: {message_id}")
 
 
 def translate_message(translator: Translator, message: Message, context: Sequence[Message]) -> tuple[str, str | None]:
