@@ -289,3 +289,26 @@ def test_the_run_reports_counts_and_failed_ids_but_never_message_text(
     assert f"failed: {broken['id']}" in out
     for text in ["0612345678", "Mój numer", "Mijn nummer", "ziek", "wypłatą"]:
         assert text not in console
+
+
+def test_a_translation_only_has_to_keep_every_link_not_their_order(tmp_path: Path) -> None:
+    two_links = "Ziekmelding: https://www.nwg.nl/ziek, loonstrook: https://www.nwg.nl/loon"
+    export = write_export(tmp_path / "export.json", [message("assistant", two_links)])
+    reordered = "Loonstrook: https://www.nwg.nl/loon, ziekmelding: https://www.nwg.nl/ziek (zie https://www.nwg.nl)"
+    translator = FakeTranslator({two_links: Translation(original_language="pl", dutch=reordered)})
+
+    exit_code = main([str(export)], translator=translator)
+
+    assert read_sheet(tmp_path / "export.xlsx")[1][3] == reordered
+    assert exit_code == 0
+
+
+def test_a_link_without_https_must_survive_too(tmp_path: Path) -> None:
+    bare_link = "Formularz na www.nwg.nl/formulier"
+    export = write_export(tmp_path / "export.json", [message("assistant", bare_link)])
+    translator = FakeTranslator({bare_link: Translation(original_language="pl", dutch="Formulier op de website")})
+
+    exit_code = main([str(export)], translator=translator)
+
+    assert read_sheet(tmp_path / "export.xlsx")[1] == ["assistant", bare_link, "pl", ""]
+    assert exit_code != 0

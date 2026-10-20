@@ -17,7 +17,7 @@ HEADER = ["role", "original_content", "original_language", "translated_content"]
 DUTCH = "nl"
 ATTEMPTS = 2
 """A failed translation is retried once."""
-URL = re.compile(r"https?://\S+")
+URL = re.compile(r"(?:https?://|www\.)\S+")
 CONTEXT_SIZE = 3
 """How many earlier messages of the same conversation go along as context."""
 
@@ -123,14 +123,14 @@ def translate_message(translator: Translator, message: Message, context: Sequenc
         if language == DUTCH:
             # Staff see Dutch exactly as it was written, never the model's "corrected" version.
             return language, message.content
-        if links(translation.dutch) == links(message.content):
+        if links(message.content) <= links(translation.dutch):
             return language, translation.dutch
     return language, None
 
 
-def links(text: str) -> list[str]:
-    """Every URL in the text, in order: a translation must keep them all, unchanged."""
-    return [url.rstrip(".,;:!?)*'\"") for url in URL.findall(text)]
+def links(text: str) -> set[str]:
+    """The URLs in the text. A translation must keep every one, unchanged; order and extras don't matter."""
+    return {url.rstrip(".,;:!?)*'\"") for url in URL.findall(text)}
 
 
 def write_sheet(rows: list[Row], path: Path) -> None:
