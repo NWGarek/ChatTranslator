@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 from chat_translator.translator import Translator
 
@@ -27,8 +28,16 @@ def main(argv: Sequence[str], translator: Translator) -> None:
         for message in conversation["messages"]:
             content = message.get("content") or ""
             if not content.strip():
-                sheet.append([message["role"], content, "", ""])
+                append_row(sheet, [message["role"], content, "", ""])
                 continue
             translated = translator.translate(content)
-            sheet.append([message["role"], content, translated.language, translated.translation])
+            append_row(sheet, [message["role"], content, translated.language, translated.translation])
     workbook.save(output)
+
+
+def append_row(sheet: Worksheet, values: list[str]) -> None:
+    """Append a row of text. Every cell is a string, so a message like "=)" never becomes a formula."""
+    row = sheet.max_row + 1
+    for column, value in enumerate(values, start=1):
+        cell = sheet.cell(row=row, column=column, value=value)
+        cell.data_type = "s"

@@ -64,6 +64,21 @@ def test_each_message_becomes_a_row_under_the_four_column_header(tmp_path: Path)
     ]
 
 
+def test_text_that_looks_like_a_formula_stays_text(tmp_path: Path) -> None:
+    export = write_export(tmp_path / "export.json", [message("user", "=) dzięki")])
+    translator = FakeTranslator({"=) dzięki": Translation(language="pl", translation="=) bedankt")})
+
+    main([str(export)], translator=translator)
+
+    sheet = load_workbook(tmp_path / "export.xlsx").active
+    assert [(cell.value, cell.data_type) for cell in sheet[2]] == [
+        ("user", "s"),
+        ("=) dzięki", "s"),
+        ("pl", "s"),
+        ("=) bedankt", "s"),
+    ]
+
+
 def test_the_output_path_can_be_chosen(tmp_path: Path) -> None:
     export = write_export(tmp_path / "export.json", [message("user", "Hello")])
     chosen = tmp_path / "elsewhere" / "sheet.xlsx"
