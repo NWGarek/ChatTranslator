@@ -1,0 +1,15 @@
+# Chatbase exports and translated output contain personal data: never commit them.
+*.json
+*.xlsx
+!package.json
+!package-lock.json
+!tsconfig*.json
+
+# Secrets
+.env
+.env.*
+
+# Tooling
+node_modules/
+.venv/
+__pycache__/
