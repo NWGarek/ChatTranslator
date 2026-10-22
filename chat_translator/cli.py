@@ -124,9 +124,9 @@ def translate_message(translator: Translator, message: Message, context: Sequenc
     """Translate one message, retrying a failed attempt once."""
     original_language = ""
     failure = ""
-    for _ in range(ATTEMPTS):
+    for attempt in range(ATTEMPTS):
         try:
-            translation = translator.translate(message.content, context=context)
+            translation = translator.translate(message.content, context=context, retry=attempt > 0)
         except TranslationFailed as error:
             failure = str(error)
             continue

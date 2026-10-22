@@ -32,11 +32,14 @@ class TranslationFailed(Exception):
 
 
 class Translator(Protocol):
-    def translate(self, content: str, context: Sequence[Message]) -> Translation:
+    def translate(self, content: str, context: Sequence[Message], *, retry: bool) -> Translation:
         """Translate one message's content, or raise TranslationFailed.
 
         `context` is the messages just before it in the same conversation. It
         helps make sense of short replies, but is never itself translated and
         never decides the original language.
+
+        `retry` is true on the second attempt after a failure. An engine that
+        answers the same request the same way should then try differently.
         """
         ...

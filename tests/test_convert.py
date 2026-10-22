@@ -32,10 +32,12 @@ class FakeTranslator:
         self.script = script or {}
         self.asked: list[str] = []
         self.contexts: dict[str, list[Message]] = {}
+        self.retries: list[tuple[str, bool]] = []
 
-    def translate(self, content: str, context: Sequence[Message]) -> Translation:
+    def translate(self, content: str, context: Sequence[Message], *, retry: bool) -> Translation:
         attempt = self.asked.count(content)
         self.asked.append(content)
+        self.retries.append((content, retry))
         self.contexts[content] = list(context)
         answers = self.script.get(content, Translation(original_language="xx", dutch=f"NL[{content}]"))
         answer = answers[min(attempt, len(answers) - 1)] if isinstance(answers, list) else answers
@@ -332,3 +334,14 @@ def test_each_failed_message_is_reported_with_why_it_failed(
     out = capsys.readouterr().out
     assert f"failed: {no_reply['id']} (no valid reply)" in out
     assert f"failed: {link_lost['id']} (link lost)" in out
+
+
+def test_a_retry_is_marked_so_the_engine_can_try_differently(tmp_path: Path) -> None:
+    export = write_export(tmp_path / "export.json", [message("user", "flaky"), message("user", "fine")])
+    translator = FakeTranslator(
+        {"flaky": [TranslationFailed("no valid reply"), Translation(original_language="en", dutch="wankel")]}
+    )
+
+    main([str(export)], translator=translator)
+
+    assert translator.retries == [("flaky", False), ("flaky", True), ("fine", False)]

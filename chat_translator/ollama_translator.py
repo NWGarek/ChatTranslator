@@ -49,6 +49,11 @@ class TranslatorUnavailable(Exception):
     """The model can't be used, so no work should start."""
 
 
+# At temperature 0 the model answers the same request the same way, so a retry
+# that repeats it would fail the same way. A little randomness gives it a real
+# second chance.
+RETRY_TEMPERATURE = 0.4
+
 ISO_639_1 = re.compile(r"[a-z]{2}")
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
 
@@ -68,7 +73,7 @@ class OllamaTranslator:
                 ) from error
             raise TranslatorUnavailable(f"Ollama cannot use the model {model}: {error.error}") from error
 
-    def translate(self, content: str, context: Sequence[Message]) -> Translation:
+    def translate(self, content: str, context: Sequence[Message], *, retry: bool) -> Translation:
         try:
             response = self._client.chat(
                 model=self._model,
@@ -77,7 +82,7 @@ class OllamaTranslator:
                     {"role": "user", "content": _prompt(content, context)},
                 ],
                 format=SCHEMA,
-                options={"temperature": 0},
+                options={"temperature": RETRY_TEMPERATURE if retry else 0},
             )
             answer = json.loads(response.message.content or "")
             language = str(answer["original_language"]).strip().lower()
