@@ -62,7 +62,8 @@ class Tally:
     translated: int = 0
     kept_dutch: int = 0
     empty: int = 0
-    failed: list[str] = field(default_factory=list)
+    failed: list[tuple[str, str]] = field(default_factory=list)
+    """(message id, why it failed) for every message left untranslated."""
 
     @property
     def total(self) -> int:
@@ -82,14 +83,14 @@ def translate(conversations: list[list[Message]], translator: Translator) -> tup
                 tally.empty += 1
                 rows.append([message.role, message.content, "", ""])
                 continue
-            original_language, dutch = translate_message(translator, message, context=earlier[-CONTEXT_SIZE:])
-            if dutch is None:
-                tally.failed.append(message.id)
-            elif original_language == DUTCH:
+            outcome = translate_message(translator, message, context=earlier[-CONTEXT_SIZE:])
+            if outcome.dutch is None:
+                tally.failed.append((message.id, outcome.failure))
+            elif outcome.original_language == DUTCH:
                 tally.kept_dutch += 1
             else:
                 tally.translated += 1
-            rows.append([message.role, message.content, original_language, dutch or ""])
+            rows.append([message.role, message.content, outcome.original_language, outcome.dutch or ""])
             earlier.append(message)
             done += 1
             print(f"\rtranslating {done}/{to_translate}", end="", file=sys.stderr, flush=True)
@@ -103,29 +104,40 @@ def report(tally: Tally) -> None:
         f"{tally.total} messages: {tally.translated} translated, {tally.kept_dutch} Dutch kept as written, "
         f"{tally.empty} empty, {len(tally.failed)} failed"
     )
-    for message_id in tally.failed:
-        print(f"failed: {message_id}")
+    for message_id, failure in tally.failed:
+        print(f"failed: {message_id} ({failure})")
 
 
-def translate_message(translator: Translator, message: Message, context: Sequence[Message]) -> tuple[str, str | None]:
-    """The original language and the Dutch, retrying a failed attempt once.
+@dataclass(frozen=True)
+class Outcome:
+    """How translating one message went."""
 
-    The Dutch is None when both attempts failed; the original language is then
-    whatever the last answer said, or blank if no answer came back.
-    """
+    original_language: str
+    """Blank only if no answer ever came back."""
+    dutch: str | None
+    """None when every attempt failed."""
+    failure: str = ""
+    """Why the last attempt failed, in words that never quote the message."""
+
+
+def translate_message(translator: Translator, message: Message, context: Sequence[Message]) -> Outcome:
+    """Translate one message, retrying a failed attempt once."""
     original_language = ""
+    failure = ""
     for _ in range(ATTEMPTS):
         try:
             translation = translator.translate(message.content, context=context)
-        except TranslationFailed:
+        except TranslationFailed as error:
+            failure = str(error)
             continue
         original_language = translation.original_language
         if original_language == DUTCH:
             # Staff see Dutch exactly as it was written, never the model's "corrected" version.
-            return original_language, message.content
+            return Outcome(original_language, message.content)
         if links(message.content) <= links(translation.dutch):
-            return original_language, translation.dutch
-    return original_language, None
+            return Outcome(original_language, translation.dutch)
+        failure = "link lost"
+    return Outcome(original_language, None, failure)
 
 
 def links(text: str) -> set[str]:

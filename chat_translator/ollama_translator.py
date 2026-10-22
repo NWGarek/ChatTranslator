@@ -82,13 +82,17 @@ class OllamaTranslator:
             answer = json.loads(response.message.content or "")
             language = str(answer["original_language"]).strip().lower()
             dutch = str(answer["dutch"])
+        # The reasons below are shown to the operator, so they never quote the message.
         # httpx.HTTPError: Ollama dropping out mid-reply surfaces as a raw transport
         # error (read error, timeout), not as the ConnectionError a refused connection gives.
-        except (ConnectionError, httpx.HTTPError, ResponseError, ValueError, KeyError, TypeError) as error:
-            # The message is not in the error: it must never reach the console.
-            raise TranslationFailed(type(error).__name__) from error
+        except (ConnectionError, httpx.HTTPError) as error:
+            raise TranslationFailed("lost connection to Ollama") from error
+        except ResponseError as error:
+            raise TranslationFailed(f"Ollama error {error.status_code}") from error
+        except (ValueError, KeyError, TypeError) as error:
+            raise TranslationFailed("no valid reply") from error
         if not ISO_639_1.fullmatch(language):
-            raise TranslationFailed("original_language is not an ISO 639-1 code")
+            raise TranslationFailed("no language code")
         return Translation(original_language=language, dutch=dutch)
 
 

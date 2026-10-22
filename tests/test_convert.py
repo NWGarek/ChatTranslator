@@ -312,3 +312,23 @@ def test_a_link_without_https_must_survive_too(tmp_path: Path) -> None:
 
     assert read_sheet(tmp_path / "export.xlsx")[1] == ["assistant", bare_link, "pl", ""]
     assert exit_code != 0
+
+
+def test_each_failed_message_is_reported_with_why_it_failed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    no_reply = message("user", "Cześć")
+    link_lost = message("assistant", "Formularz: https://www.nwg.nl/formulieren")
+    export = write_export(tmp_path / "export.json", [no_reply, link_lost])
+    translator = FakeTranslator(
+        {
+            "Cześć": TranslationFailed("no valid reply"),
+            "Formularz: https://www.nwg.nl/formulieren": Translation(original_language="pl", dutch="Formulier"),
+        }
+    )
+
+    main([str(export)], translator=translator)
+
+    out = capsys.readouterr().out
+    assert f"failed: {no_reply['id']} (no valid reply)" in out
+    assert f"failed: {link_lost['id']} (link lost)" in out
